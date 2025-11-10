@@ -8,9 +8,10 @@ This guide helps you set up the new enhanced features for the platform.
 1. **Activity Logging** - Track all platform actions (upload, review, approve, delete, assign)
 2. **Auto-Assignment** - Tasks automatically assigned to reviewers fairly when uploaded
 3. **Delete Functionality** - Contributors and admins can delete submissions (removes from DB and storage)
-4. **Search API** - Search tasks by title, domain, or language
-5. **Admin Stats API** - Comprehensive statistics for all users and tasks
-6. **Admin Logs API** - View all platform activity
+4. **User Account Deletion** - Admins can delete contributor and reviewer accounts
+5. **Search API** - Search tasks by title, domain, or language
+6. **Admin Stats API** - Comprehensive statistics for all users and tasks
+7. **Admin Logs API** - View all platform activity
 
 ### Frontend Enhancements (Coming Next)
 1. **Enhanced UI/UX** - Modern, clean design for all pages
@@ -105,23 +106,49 @@ All major actions are logged:
 - `REVIEW` - When reviewer submits feedback
 - `APPROVE` - When admin approves a task
 - `DELETE` - When submission is deleted
+- `DELETE_USER` - When admin deletes a user account
 - `APPROVE_REVIEWER` - When admin approves a reviewer
 
 Admins can view all logs in their dashboard.
 
 ### 3. Delete Functionality
 
-**Who can delete**:
+**Who can delete submissions**:
 - Contributors: Can delete their own submissions only
 - Admins: Can delete any submission
 
-**What happens when deleting**:
+**What happens when deleting a submission**:
 1. File is removed from Supabase Storage
 2. Submission is deleted from database
 3. All reviews for that submission are deleted (CASCADE)
 4. Activity is logged
 
-### 4. Search Functionality
+### 4. User Account Deletion (Admin Only)
+
+**Who can delete user accounts**:
+- Only Admins can delete user accounts
+- Admins CANNOT delete other admin accounts (safety feature)
+- Admins CANNOT delete their own account (safety feature)
+
+**What happens when deleting a Contributor**:
+1. All their submission files are deleted from Supabase Storage
+2. All their submissions are deleted from database
+3. All reviews on their submissions are deleted (CASCADE)
+4. Activity is logged with deletion summary
+
+**What happens when deleting a Reviewer**:
+1. All tasks assigned to them are unassigned and reset to PENDING status
+2. Tasks become available for reassignment to other reviewers
+3. All their reviews are deleted from database
+4. Activity is logged with deletion summary
+
+**Safety Features**:
+- Cannot delete admin users
+- Cannot delete your own account
+- Deletion is permanent and cannot be undone
+- Comprehensive logging of what was deleted
+
+### 5. Search Functionality
 
 All users can search their tasks by:
 - Title (e.g., "Bug fix")
@@ -130,7 +157,7 @@ All users can search their tasks by:
 
 Search is case-insensitive and matches partial strings.
 
-### 5. Admin Stats Dashboard
+### 6. Admin Stats Dashboard
 
 Admins can see:
 
@@ -346,6 +373,14 @@ Returns: Array of activity logs
 GET /api/admin/stats
 Auth: Admin only
 Returns: Comprehensive platform statistics
+```
+
+```
+DELETE /api/admin/users/delete
+Body: { userId: string }
+Auth: Admin only
+Returns: Deletion summary with counts
+Safety: Cannot delete admins or self
 ```
 
 ### Updated Endpoints
