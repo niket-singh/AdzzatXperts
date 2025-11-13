@@ -18,7 +18,7 @@ interface Submission {
     name: string
     email: string
   }
-  reviews: {
+  reviews?: {
     id: string
     feedback: string
     accountPostedIn?: string
@@ -288,7 +288,7 @@ export default function ReviewerDashboard() {
                   </div>
                 </div>
 
-                {submission.reviews.length > 0 && (
+                {submission.reviews && submission.reviews.length > 0 && (
                   <div className="mt-4 border-t pt-4">
                     <h4 className="text-sm font-bold text-gray-700 mb-3">Previous Reviews</h4>
                     {submission.reviews.map((review) => (

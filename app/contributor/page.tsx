@@ -14,7 +14,7 @@ interface Submission {
   fileName: string
   status: string
   createdAt: string
-  reviews: {
+  reviews?: {
     id: string
     feedback: string
     createdAt: string
@@ -431,7 +431,7 @@ export default function ContributorDashboard() {
                   </div>
                 </div>
 
-                {submission.reviews.length > 0 && (
+                {submission.reviews && submission.reviews.length > 0 && (
                   <div className="mt-4 border-t pt-4">
                     <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                       <span className="text-lg">💬</span> Reviewer Feedback
