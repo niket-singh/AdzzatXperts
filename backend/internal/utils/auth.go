@@ -9,7 +9,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
+// getJWTSecret retrieves the JWT secret from environment
+func getJWTSecret() []byte {
+	return []byte(os.Getenv("JWT_SECRET"))
+}
 
 // Claims represents JWT claims
 type Claims struct {
@@ -33,6 +36,7 @@ func CheckPassword(password, hash string) bool {
 
 // GenerateJWT generates a JWT token for a user
 func GenerateJWT(userID, email, role string) (string, error) {
+	jwtSecret := getJWTSecret()
 	if len(jwtSecret) == 0 {
 		return "", errors.New("JWT_SECRET not set")
 	}
@@ -54,6 +58,7 @@ func GenerateJWT(userID, email, role string) (string, error) {
 
 // ValidateJWT validates and parses a JWT token
 func ValidateJWT(tokenString string) (*Claims, error) {
+	jwtSecret := getJWTSecret()
 	if len(jwtSecret) == 0 {
 		return nil, errors.New("JWT_SECRET not set")
 	}
