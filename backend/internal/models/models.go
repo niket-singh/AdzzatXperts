@@ -31,11 +31,11 @@ type User struct {
 	ID           uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	Email        string    `gorm:"uniqueIndex;not null" json:"email"`
 	PasswordHash string    `gorm:"not null" json:"-"`
-	Name         string    `gorm:"not null" json:"name"`
-	Role         UserRole  `gorm:"type:varchar(20);not null;default:'CONTRIBUTOR'" json:"role"`
-	IsApproved   bool      `gorm:"default:false" json:"isApproved"`
-	IsGreenLight bool      `gorm:"default:true" json:"isGreenLight"` // Green light status for reviewers (active/inactive)
-	CreatedAt    time.Time `json:"createdAt"`
+	Name         string    `gorm:"not null;index" json:"name"` // Index for search
+	Role         UserRole  `gorm:"type:varchar(20);not null;default:'CONTRIBUTOR';index" json:"role"` // Index for filtering by role
+	IsApproved   bool      `gorm:"default:false;index" json:"isApproved"` // Index for filtering approved users
+	IsGreenLight bool      `gorm:"default:true;index" json:"isGreenLight"` // Index for active reviewer queries
+	CreatedAt    time.Time `gorm:"index" json:"createdAt"` // Index for sorting by date
 	UpdatedAt    time.Time `json:"updatedAt"`
 
 	// Relations
@@ -47,16 +47,16 @@ type User struct {
 // Submission model
 type Submission struct {
 	ID            uuid.UUID   `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Title         string      `gorm:"not null" json:"title"`
-	Domain        string      `gorm:"not null" json:"domain"`
-	Language      string      `gorm:"not null" json:"language"`
+	Title         string      `gorm:"not null;index" json:"title"` // Index for search
+	Domain        string      `gorm:"not null;index" json:"domain"` // Index for filtering by domain
+	Language      string      `gorm:"not null;index" json:"language"` // Index for filtering by language
 	FileURL       string      `gorm:"not null" json:"fileUrl"`
 	FileName      string      `gorm:"not null" json:"fileName"`
-	Status        TaskStatus  `gorm:"type:varchar(20);not null;default:'PENDING'" json:"status"`
-	ClaimedByID   *uuid.UUID  `gorm:"type:uuid" json:"claimedById,omitempty"`
-	AssignedAt    *time.Time  `json:"assignedAt,omitempty"`
-	ContributorID uuid.UUID   `gorm:"type:uuid;not null" json:"contributorId"`
-	CreatedAt     time.Time   `json:"createdAt"`
+	Status        TaskStatus  `gorm:"type:varchar(20);not null;default:'PENDING';index" json:"status"` // Index for filtering by status
+	ClaimedByID   *uuid.UUID  `gorm:"type:uuid;index" json:"claimedById,omitempty"` // Index for reviewer queries
+	AssignedAt    *time.Time  `gorm:"index" json:"assignedAt,omitempty"` // Index for sorting
+	ContributorID uuid.UUID   `gorm:"type:uuid;not null;index" json:"contributorId"` // Index for contributor queries
+	CreatedAt     time.Time   `gorm:"index" json:"createdAt"` // Index for sorting by date
 	UpdatedAt     time.Time   `json:"updatedAt"`
 
 	// Relations
@@ -70,9 +70,9 @@ type Review struct {
 	ID              uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	Feedback        string     `gorm:"type:text;not null" json:"feedback"`
 	AccountPostedIn *string    `json:"accountPostedIn,omitempty"`
-	SubmissionID    uuid.UUID  `gorm:"type:uuid;not null" json:"submissionId"`
-	ReviewerID      uuid.UUID  `gorm:"type:uuid;not null" json:"reviewerId"`
-	CreatedAt       time.Time  `json:"createdAt"`
+	SubmissionID    uuid.UUID  `gorm:"type:uuid;not null;index" json:"submissionId"` // Index for fetching reviews by submission
+	ReviewerID      uuid.UUID  `gorm:"type:uuid;not null;index" json:"reviewerId"` // Index for reviewer stats
+	CreatedAt       time.Time  `gorm:"index" json:"createdAt"` // Index for sorting
 	UpdatedAt       time.Time  `json:"updatedAt"`
 
 	// Relations
@@ -83,24 +83,24 @@ type Review struct {
 // ActivityLog model
 type ActivityLog struct {
 	ID          uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Action      string     `gorm:"not null" json:"action"`
+	Action      string     `gorm:"not null;index" json:"action"` // Index for filtering by action
 	Description string     `gorm:"type:text;not null" json:"description"`
-	UserID      *uuid.UUID `gorm:"type:uuid" json:"userId,omitempty"`
+	UserID      *uuid.UUID `gorm:"type:uuid;index" json:"userId,omitempty"` // Index for user activity
 	UserName    *string    `json:"userName,omitempty"`
 	UserRole    *string    `json:"userRole,omitempty"`
 	TargetID    *uuid.UUID `gorm:"type:uuid" json:"targetId,omitempty"`
 	TargetType  *string    `json:"targetType,omitempty"`
 	Metadata    *string    `gorm:"type:jsonb" json:"metadata,omitempty"`
-	CreatedAt   time.Time  `json:"createdAt"`
+	CreatedAt   time.Time  `gorm:"index" json:"createdAt"` // Index for sorting by date
 }
 
 // PasswordResetToken model for password reset flow
 type PasswordResetToken struct {
 	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID    uuid.UUID `gorm:"type:uuid;not null" json:"userId"`
-	Token     string    `gorm:"uniqueIndex;not null" json:"token"`
-	ExpiresAt time.Time `gorm:"not null" json:"expiresAt"`
-	Used      bool      `gorm:"default:false" json:"used"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null;index" json:"userId"` // Index for cleanup queries
+	Token     string    `gorm:"uniqueIndex;not null" json:"token"` // Already has unique index
+	ExpiresAt time.Time `gorm:"not null;index" json:"expiresAt"` // Index for expiry checks
+	Used      bool      `gorm:"default:false;index" json:"used"` // Index for unused token queries
 	CreatedAt time.Time `json:"createdAt"`
 
 	// Relations
@@ -110,15 +110,15 @@ type PasswordResetToken struct {
 // AuditLog model - enhanced version for security tracking
 type AuditLog struct {
 	ID         uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID     uuid.UUID  `gorm:"type:uuid;not null" json:"userId"`
+	UserID     uuid.UUID  `gorm:"type:uuid;not null;index" json:"userId"` // Index for user activity queries
 	UserName   string     `gorm:"not null" json:"userName"`
-	Action     string     `gorm:"not null;index" json:"action"`
-	EntityType string     `gorm:"not null" json:"entityType"`
+	Action     string     `gorm:"not null;index" json:"action"` // Index for filtering by action
+	EntityType string     `gorm:"not null;index" json:"entityType"` // Index for filtering by entity type
 	EntityID   *uuid.UUID `gorm:"type:uuid" json:"entityId,omitempty"`
 	Metadata   *string    `gorm:"type:jsonb" json:"metadata,omitempty"`
-	IPAddress  string     `gorm:"not null" json:"ipAddress"`
+	IPAddress  string     `gorm:"not null;index" json:"ipAddress"` // Index for IP-based queries
 	UserAgent  string     `gorm:"type:text" json:"userAgent"`
-	CreatedAt  time.Time  `gorm:"index" json:"createdAt"`
+	CreatedAt  time.Time  `gorm:"index" json:"createdAt"` // Index for sorting by date
 
 	// Relations
 	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`

@@ -56,8 +56,10 @@ func main() {
 func setupRouter() *gin.Engine {
 	router := gin.Default()
 
-	// Apply CORS middleware
+	// Apply global middlewares
 	router.Use(middleware.CORSMiddleware())
+	router.Use(middleware.CompressionMiddleware()) // Gzip compression
+	router.Use(middleware.RateLimitMiddleware(100)) // 100 requests per minute per IP
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
