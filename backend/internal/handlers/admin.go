@@ -91,6 +91,7 @@ func GetStats(c *gin.Context) {
 			"name":            reviewer.Name,
 			"email":           reviewer.Email,
 			"isApproved":      reviewer.IsApproved,
+			"isGreenLight":    reviewer.IsGreenLight,
 			"joinedAt":        reviewer.CreatedAt,
 			"tasksInStack":    assignedTasks,
 			"pendingReview":   pendingReview,
@@ -103,16 +104,19 @@ func GetStats(c *gin.Context) {
 	}
 
 	// Overall platform stats
-	var totalUsers, totalContributors, totalReviewers, approvedReviewers, pendingReviewers, totalSubmissions, pendingReviews int64
+	var totalUsers, totalContributors, totalReviewers, approvedReviewers, pendingReviewers, activeReviewers, inactiveReviewers, totalSubmissions, pendingReviews, queuedTasks int64
 	database.DB.Model(&models.User{}).Count(&totalUsers)
 	database.DB.Model(&models.User{}).Where("role = ?", models.RoleContributor).Count(&totalContributors)
 	database.DB.Model(&models.User{}).Where("role = ?", models.RoleReviewer).Count(&totalReviewers)
 	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ?", models.RoleReviewer, true).Count(&approvedReviewers)
 	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ?", models.RoleReviewer, false).Count(&pendingReviewers)
+	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ? AND is_green_light = ?", models.RoleReviewer, true, true).Count(&activeReviewers)
+	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ? AND is_green_light = ?", models.RoleReviewer, true, false).Count(&inactiveReviewers)
 	database.DB.Model(&models.Submission{}).Count(&totalSubmissions)
 	database.DB.Model(&models.Submission{}).Where("status IN ?", []string{
 		string(models.StatusPending), string(models.StatusClaimed),
 	}).Count(&pendingReviews)
+	database.DB.Model(&models.Submission{}).Where("status = ?", models.StatusPending).Count(&queuedTasks)
 
 	// Submissions by status
 	var statusCounts []struct {
@@ -136,8 +140,11 @@ func GetStats(c *gin.Context) {
 			"totalReviewers":    totalReviewers,
 			"approvedReviewers": approvedReviewers,
 			"pendingReviewers":  pendingReviewers,
+			"activeReviewers":   activeReviewers,
+			"inactiveReviewers": inactiveReviewers,
 			"totalSubmissions":  totalSubmissions,
 			"pendingReviews":    pendingReviews,
+			"queuedTasks":       queuedTasks,
 			"statusCounts":      statusCountsMap,
 		},
 		"contributors": contributorStats,

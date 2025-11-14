@@ -34,6 +34,7 @@ type User struct {
 	Name         string    `gorm:"not null" json:"name"`
 	Role         UserRole  `gorm:"type:varchar(20);not null;default:'CONTRIBUTOR'" json:"role"`
 	IsApproved   bool      `gorm:"default:false" json:"isApproved"`
+	IsGreenLight bool      `gorm:"default:true" json:"isGreenLight"` // Green light status for reviewers (active/inactive)
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 

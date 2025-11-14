@@ -125,6 +125,11 @@ class ApiClient {
     return response.data
   }
 
+  async toggleGreenLight(userId: string) {
+    const response = await this.client.put(`/users/${userId}/greenlight`)
+    return response.data
+  }
+
   async switchUserRole(userId: string, newRole: string) {
     const response = await this.client.put(`/users/${userId}/role`, { newRole })
     return response.data
