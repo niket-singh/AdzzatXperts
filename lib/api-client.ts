@@ -70,6 +70,16 @@ class ApiClient {
     return response.data
   }
 
+  async requestPasswordReset(email: string) {
+    const response = await this.client.post('/auth/forgot-password', { email })
+    return response.data
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const response = await this.client.post('/auth/reset-password', { token, newPassword })
+    return response.data
+  }
+
   // Profile
   async getProfile() {
     const response = await this.client.get('/profile')
@@ -158,6 +168,23 @@ class ApiClient {
   async getLeaderboard() {
     const response = await this.client.get('/leaderboard')
     return response.data.leaderboard || []
+  }
+
+  // Analytics
+  async getAnalytics() {
+    const response = await this.client.get('/admin/analytics')
+    return response.data
+  }
+
+  async getAnalyticsChartData(range: '7d' | '30d' | '90d' = '30d') {
+    const response = await this.client.get('/admin/analytics/chart', { params: { range } })
+    return response.data
+  }
+
+  // Audit Logs
+  async getAuditLogs(params?: { limit?: number; offset?: number; action?: string; userId?: string }) {
+    const response = await this.client.get('/admin/audit-logs', { params })
+    return response.data
   }
 }
 
