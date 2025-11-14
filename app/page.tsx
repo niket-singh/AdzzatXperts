@@ -108,7 +108,7 @@ export default function Home() {
           <h1 className={`text-3xl font-bold mb-2 ${
             theme === 'dark' ? 'text-white' : 'text-gray-800'
           }`}>
-            AdzzatXperts
+            Reviewers-Adzzat
           </h1>
           <p className={`text-sm ${
             theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
