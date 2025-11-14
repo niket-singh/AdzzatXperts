@@ -24,12 +24,13 @@ func GetUsers(c *gin.Context) {
 	var response []gin.H
 	for _, user := range users {
 		response = append(response, gin.H{
-			"id":         user.ID,
-			"email":      user.Email,
-			"name":       user.Name,
-			"role":       user.Role,
-			"isApproved": user.IsApproved,
-			"createdAt":  user.CreatedAt,
+			"id":           user.ID,
+			"email":        user.Email,
+			"name":         user.Name,
+			"role":         user.Role,
+			"isApproved":   user.IsApproved,
+			"isGreenLight": user.IsGreenLight,
+			"createdAt":    user.CreatedAt,
 		})
 	}
 
@@ -82,6 +83,81 @@ func ApproveReviewer(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, gin.H{"message": "Reviewer approved successfully"})
+}
+
+// ToggleGreenLight toggles the green light status for a reviewer
+func ToggleGreenLight(c *gin.Context) {
+	userID := c.Param("id")
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, uid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	if user.Role != models.RoleReviewer {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not a reviewer"})
+		return
+	}
+
+	// Toggle the green light status
+	user.IsGreenLight = !user.IsGreenLight
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle green light"})
+		return
+	}
+
+	// If green light was turned ON, assign queued tasks
+	var assignedCount int
+	if user.IsGreenLight {
+		count, err := services.AssignQueuedTasks()
+		if err == nil {
+			assignedCount = count
+		}
+	}
+
+	// Log activity
+	currentUserID, _ := c.Get("userId")
+	currentUserName, _ := c.Get("userEmail")
+	currentUserRole, _ := c.Get("userRole")
+	uid2, _ := uuid.Parse(currentUserID.(string))
+	userName := currentUserName.(string)
+	userRole := currentUserRole.(string)
+	targetType := "user"
+
+	status := "OFF"
+	if user.IsGreenLight {
+		status = "ON"
+	}
+
+	metadata := map[string]interface{}{
+		"status": status,
+	}
+	if assignedCount > 0 {
+		metadata["queuedTasksAssigned"] = assignedCount
+	}
+
+	services.LogActivity(services.LogActivityParams{
+		Action:      "TOGGLE_GREEN_LIGHT",
+		Description: "Admin turned " + status + " green light for reviewer: " + user.Name,
+		UserID:      &uid2,
+		UserName:    &userName,
+		UserRole:    &userRole,
+		TargetID:    &uid,
+		TargetType:  &targetType,
+		Metadata:    metadata,
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":              "Green light toggled successfully",
+		"isGreenLight":         user.IsGreenLight,
+		"queuedTasksAssigned": assignedCount,
+	})
 }
 
 // SwitchUserRole changes a user's role (NEW FEATURE)
