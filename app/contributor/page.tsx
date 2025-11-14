@@ -156,6 +156,22 @@ export default function ContributorDashboard() {
     }
   }
 
+  const handleDownload = async (id: string, fileName: string) => {
+    try {
+      const { downloadUrl } = await apiClient.getDownloadURL(id)
+      // Create a temporary link and trigger download
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = fileName
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to generate download link')
+    }
+  }
+
   const handleLogout = async () => {
     await logout()
     router.push('/')
@@ -420,6 +436,15 @@ export default function ContributorDashboard() {
                     >
                       {submission.status}
                     </span>
+                    <button
+                      onClick={() => handleDownload(submission.id, submission.fileName)}
+                      className="px-3 py-1 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download
+                    </button>
                     {submission.status === 'PENDING' && (
                       <button
                         onClick={() => handleDelete(submission.id, submission.title)}

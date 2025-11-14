@@ -18,8 +18,9 @@ func UploadSubmission(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	userRole, _ := c.Get("userRole")
 
-	if userRole != string(models.RoleContributor) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only contributors can upload submissions"})
+	// Allow contributors and admins to upload submissions
+	if userRole != string(models.RoleContributor) && userRole != string(models.RoleAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only contributors and admins can upload submissions"})
 		return
 	}
 
@@ -241,15 +242,22 @@ func GetDownloadURL(c *gin.Context) {
 		return
 	}
 
+	userID, _ := c.Get("userId")
 	userRole, _ := c.Get("userRole")
-	if userRole != string(models.RoleReviewer) && userRole != string(models.RoleAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers and admins can download"})
-		return
-	}
+	uid, _ := uuid.Parse(userID.(string))
 
 	var submission models.Submission
 	if err := database.DB.First(&submission, sid).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Allow reviewers, admins, and contributors to download their own submissions
+	isOwner := submission.ContributorID == uid
+	canDownload := userRole == string(models.RoleReviewer) || userRole == string(models.RoleAdmin) || (userRole == string(models.RoleContributor) && isOwner)
+
+	if !canDownload {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to download this file"})
 		return
 	}
 
