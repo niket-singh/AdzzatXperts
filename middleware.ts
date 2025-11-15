@@ -6,6 +6,10 @@ export function middleware(request: NextRequest) {
 
   // Security Headers
 
+  // Get backend URL and extract base URL (remove /api path for CSP)
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+  const baseUrl = apiUrl.replace('/api', '')
+
   // Content Security Policy
   response.headers.set(
     'Content-Security-Policy',
@@ -15,7 +19,7 @@ export function middleware(request: NextRequest) {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' " + (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'),
+      "connect-src 'self' " + baseUrl + " wss:" + baseUrl.replace('https:', '').replace('http:', ''),
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
