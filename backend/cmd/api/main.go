@@ -7,6 +7,7 @@ import (
 	"github.com/adzzatxperts/backend/internal/database"
 	"github.com/adzzatxperts/backend/internal/handlers"
 	"github.com/adzzatxperts/backend/internal/middleware"
+	"github.com/adzzatxperts/backend/internal/services"
 	"github.com/adzzatxperts/backend/internal/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -33,6 +34,10 @@ func main() {
 		log.Fatal("Failed to initialize storage:", err)
 	}
 
+	// Initialize services
+	services.InitEmailService()
+	handlers.InitWebSocket()
+
 	// Setup router
 	router := setupRouter()
 
@@ -51,8 +56,10 @@ func main() {
 func setupRouter() *gin.Engine {
 	router := gin.Default()
 
-	// Apply CORS middleware
+	// Apply global middlewares
 	router.Use(middleware.CORSMiddleware())
+	router.Use(middleware.CompressionMiddleware()) // Gzip compression
+	router.Use(middleware.RateLimitMiddleware(100)) // 100 requests per minute per IP
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
@@ -69,12 +76,17 @@ func setupRouter() *gin.Engine {
 			auth.POST("/signin", handlers.Signin)
 			auth.POST("/logout", handlers.Logout)
 			auth.GET("/me", middleware.AuthMiddleware(), handlers.GetMe)
+			auth.POST("/forgot-password", handlers.ForgotPassword)
+			auth.POST("/reset-password", handlers.ResetPassword)
 		}
 
 		// Protected routes
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware())
 		{
+			// WebSocket route
+			protected.GET("/ws", handlers.HandleWebSocket)
+
 			// Profile routes
 			protected.GET("/profile", handlers.GetProfile)
 			protected.PUT("/profile", handlers.UpdateProfile)
@@ -108,6 +120,13 @@ func setupRouter() *gin.Engine {
 				admin.GET("/logs", handlers.GetLogs)
 				admin.GET("/stats", handlers.GetStats)
 				admin.GET("/leaderboard", handlers.GetLeaderboard)
+
+				// Analytics
+				admin.GET("/admin/analytics", handlers.GetAnalytics)
+				admin.GET("/admin/analytics/chart", handlers.GetAnalyticsChartData)
+
+				// Audit logs
+				admin.GET("/admin/audit-logs", handlers.GetAuditLogs)
 			}
 		}
 	}
