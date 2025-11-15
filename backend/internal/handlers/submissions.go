@@ -129,8 +129,15 @@ func GetSubmissions(c *gin.Context) {
 		query = query.Where("contributor_id = ?", uid)
 	} else if userRole == string(models.RoleReviewer) {
 		query = query.Where("claimed_by_id = ?", uid)
+	} else if userRole == string(models.RoleAdmin) {
+		// Admins can filter to see their assigned tasks or all tasks
+		viewMode := c.Query("view")
+		if viewMode == "mine" {
+			// Show only tasks assigned to admin
+			query = query.Where("claimed_by_id = ?", uid)
+		}
+		// Otherwise admins see all (default)
 	}
-	// Admins see all
 
 	// Status filter
 	if status != "" && status != "all" {
