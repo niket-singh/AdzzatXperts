@@ -77,11 +77,6 @@ func Signup(c *gin.Context) {
 		TargetType:  &targetType,
 	})
 
-	// Send welcome email
-	if services.Email != nil {
-		go services.Email.SendWelcomeEmail(user.Email, user.Name, userRole)
-	}
-
 	// Generate JWT
 	token, err := utils.GenerateJWT(user.ID.String(), user.Email, string(user.Role))
 	if err != nil {
@@ -238,17 +233,12 @@ func ForgotPassword(c *gin.Context) {
 		TargetType:  &targetType,
 	})
 
-	// Send password reset email
-	if services.Email != nil {
-		err := services.Email.SendPasswordResetEmail(user.Email, user.Name, token)
-		if err != nil {
-			// Log error but don't reveal to user for security
-			log.Printf("Failed to send password reset email to %s: %v", user.Email, err)
-		}
-	}
-
+	// Return success message
+	// Note: In production, implement email service to send reset link
+	// For now, token must be obtained through other means (admin panel, logs, etc.)
 	c.JSON(http.StatusOK, gin.H{
-		"message": "If an account exists, a password reset link has been sent",
+		"message": "Password reset token generated successfully",
+		"token":   token, // TODO: Remove in production - only for development
 	})
 }
 
