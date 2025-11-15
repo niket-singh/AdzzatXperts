@@ -7,7 +7,6 @@ import (
 	"github.com/adzzatxperts/backend/internal/database"
 	"github.com/adzzatxperts/backend/internal/handlers"
 	"github.com/adzzatxperts/backend/internal/middleware"
-	"github.com/adzzatxperts/backend/internal/services"
 	"github.com/adzzatxperts/backend/internal/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
