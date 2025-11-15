@@ -35,7 +35,6 @@ func main() {
 	}
 
 	// Initialize services
-	services.InitEmailService()
 	handlers.InitWebSocket()
 
 	// Setup router
