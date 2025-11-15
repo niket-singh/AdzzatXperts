@@ -29,7 +29,7 @@ class ApiClient {
       (error: AxiosError) => {
         if (error.response?.status === 401 && typeof window !== 'undefined') {
           localStorage.removeItem('authToken')
-          window.location.href = '/signin'
+          window.location.href = '/' // Redirect to home page (signin/signup)
         }
         return Promise.reject(error)
       }
